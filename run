@@ -1,0 +1,29 @@
+
+#/bin/bash
+case "$1" in
+	"init")
+		mkdir build
+		cd build
+		cmake ../
+		make
+		cd ..
+	;;
+	"build")
+		cd build
+		make
+		cd ..
+	;;
+	"start")
+		./build/Debug/solar_system
+	;;
+	"rs")
+		cd build
+		make
+		./Debug/solar_system
+		cd ..
+	;;
+	*)
+		echo "You have failed to specify what to do correctly."
+		exit 1
+	;;
+esac
