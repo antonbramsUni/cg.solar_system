@@ -15,11 +15,11 @@ using namespace gl;
 #include <iostream>
 
 std::vector <ApplicationSolar::Planet> planets = {
-	{"sun", 	-1,  20.3800f,    0.000f,  0.00000f},
+	{"sun", 	-1, 109.3800f,    0.000f,  0.00000f},
 	{"mercury",	 0,	  0.3830f,   58.800f,  0.38700f},
 	{"venus", 	 0,	  0.9490f, -244.000f,  0.72300f},
 	{"earth", 	 0,	  1.0000f,    1.000f,  1.00000f},
-	{"moon", 	 3,   0.2724f,   27.400f,  0.10257f},
+	{"moon", 	 3,   0.2724f,   27.400f,  0.00256f},
 	{"mars", 	 0,	  0.5320f,    1.030f,  1.52000f},
 	{"jupiter",	 0,	 11.2100f,    0.415f,  5.20000f},
 	{"saturn", 	 0,	  9.4500f,    0.445f,  9.58000f},
@@ -39,14 +39,17 @@ void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 	// create origin matrix
 	p.origin = p.parent == -1? glm::fmat4 {}: 
 		planets.at((unsigned long) p.parent).origin;
-	float angle = glfwGetTime() * p.speed * 0.1f;
-	p.origin = glm::rotate(
-		p.origin, angle, glm::fvec3{0, 0, 1.0f});
-	p.origin = glm::translate(
-		p.origin, glm::fvec3 {p.orbit, 0, 0});
-	// create model matrix
+	// orbit and rotation
+	if (p.orbit != 0.0f) {
+		float angle = glfwGetTime() * p.speed * 0.01f;
+		p.origin = glm::rotate(
+			p.origin, angle, glm::fvec3{0, 1.0f, 0});
+		p.origin = glm::translate(
+			p.origin, glm::fvec3 {p.orbit * 4, 0, 0});
+	}
+	// scale
 	glm::fmat4 model_matrix = glm::scale(
-		p.origin, glm::vec3(p.diameter/100));
+		p.origin, glm::vec3(p.diameter / 400));
 	// do routin
 	glUniformMatrix4fv(
 		m_shaders.at("planet").u_locs.at("ModelMatrix"),
@@ -69,10 +72,8 @@ void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 
 void ApplicationSolar::render() const {
 	for (std::vector<Planet>::iterator p = planets.begin(); 
-		p != planets.end(); ++ p)
-		upload_planet_transforms(*p);
-	// for (unsigned long i = 0; i < planets.size(); i ++)
-	// 	upload_planet_transforms(*planets.at(i))
+		p != planets.end(); ++ p) 
+			upload_planet_transforms(*p);
 }
 
 void ApplicationSolar::updateView() {
@@ -102,40 +103,50 @@ void ApplicationSolar::uploadUniforms() {
 
 // handle key input
 void ApplicationSolar::keyCallback(int key, int scancode, int action, int mods) {
-	float speed = 1.0f;
-	if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-		m_view_transform = glm::translate(
-			m_view_transform, 
-			glm::fvec3{0.0f, 0.0f, -speed});
-		updateView();
-	} else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-		m_view_transform = glm::translate(
-			m_view_transform, 
-			glm::fvec3{0.0f, 0.0f, speed});
-		updateView();
-	} else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-		m_view_transform = glm::translate(
-			m_view_transform, 
-			glm::fvec3{-speed, 0.0f, 0.0f});
-		updateView();
-	} else if (key == GLFW_KEY_D && action == GLFW_PRESS) {
-		m_view_transform = glm::translate(
-			m_view_transform, 
-			glm::fvec3{speed, 0.0f, 0.0f});
-		updateView();
+	// std::cout << action << std::endl;
+	// if (key == 70) mouseActive = action > 0? true: false;
+	// GLFW_PRESS
+	float speed = .2f;
+	if (key == GLFW_KEY_W && action != GLFW_RELEASE) {
+		zoom -= speed;
+		updateViewPort();
+	} else if (key == GLFW_KEY_S && action != GLFW_RELEASE) {
+		zoom += speed;
+		updateViewPort();
+	} else if (key == GLFW_KEY_A && action != GLFW_RELEASE) {
+		slide -= speed;
+		updateViewPort();
+	} else if (key == GLFW_KEY_D && action != GLFW_RELEASE) {
+		slide += speed;
+		updateViewPort();
 	}
 }
 
-//handle delta mouse movement input
+// handle delta mouse movement input
 void ApplicationSolar::mouseCallback(double pos_x, double pos_y) {
-	
+	if (mouseActive) {
+		float speed = .01f;
+		mouseX += pos_x * speed;
+		mouseY += pos_y * speed;
+		updateViewPort();
+	}
+}
+
+void ApplicationSolar::updateViewPort() {
+	m_view_transform = glm::fmat4 {};
+	m_view_transform = glm::rotate(
+		m_view_transform, -mouseX, glm::fvec3{0, 1.0f, 0});
+	m_view_transform = glm::rotate(
+		m_view_transform, -mouseY, glm::fvec3{1.0f, 0, 0});
+	m_view_transform = glm::translate(
+		m_view_transform, glm::fvec3{slide, 0, zoom});
+	updateView();
 }
 
 // load shader programs
 void ApplicationSolar::initializeShaderPrograms() {
 	// store shader program objects in container
-	m_shaders.emplace(
-		"planet", 
+	m_shaders.emplace("planet", 
 		shader_program{m_resource_path + "shaders/simple.vert",
 		m_resource_path + "shaders/simple.frag"});
 	// request uniform locations for shader program
@@ -148,8 +159,7 @@ void ApplicationSolar::initializeShaderPrograms() {
 // load models
 void ApplicationSolar::initializeGeometry() {
 	model planet_model = model_loader::obj(
-		m_resource_path + "models/sphere.obj", 
-		model::NORMAL);
+		m_resource_path + "models/sphere.obj", model::NORMAL);
 	// generate vertex array object
 	glGenVertexArrays(1, &planet_object.vertex_AO);
 	// bind the array for attaching buffers

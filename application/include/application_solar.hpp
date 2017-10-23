@@ -53,6 +53,14 @@ class ApplicationSolar : public Application {
 		void updateView();
 		// cpu representation of model
 		model_object planet_object;
+	
+	private:
+		bool mouseActive = true;
+		float mouseX = 0;
+		float mouseY = 0;
+		float zoom   = 4;
+		float slide  = 0;
+		void updateViewPort();
 };
 
 #endif
