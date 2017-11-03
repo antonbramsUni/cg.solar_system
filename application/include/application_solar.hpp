@@ -48,13 +48,15 @@ class ApplicationSolar : public Application {
 		void upload_planet_transforms(Planet &p) const;
 		
 	protected:
+		
 		void initializeShaderPrograms();
 		void initializeGeometry();
 		void updateView();
 		// cpu representation of model
-		model_object planet_object;
+		model_object planet_object, star_object;
 	
 	private:
+		
 		bool mouseActive = true;
 		float mouseX = 0;
 		float mouseY = 0;

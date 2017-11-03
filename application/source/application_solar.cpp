@@ -1,9 +1,12 @@
+// https://www.uni-weimar.de/fileadmin/user/fak/medien/professuren/Computer_Graphics/course_material/CG_Exercise_1718/CG_assignments.pdf
+
 #include "application_solar.hpp"
 #include "launcher.hpp"
 #include "utils.hpp"
 #include "shader_loader.hpp"
 #include "model_loader.hpp"
 #include <glbinding/gl/gl.h>
+#include <stdlib.h>
 // use gl definitions from glbinding 
 using namespace gl;
 //dont load gl bindings from glfw
@@ -27,8 +30,12 @@ std::vector <ApplicationSolar::Planet> planets = {
 	{"neptune",	 0,	  3.8800f,    0.673f, 30.05000f}
 };
 
+float random (float min, float max) {
+	return (max - min) * (float(rand() % 100) / 100) + min;
+}
+
 ApplicationSolar::ApplicationSolar(std::string const& resource_path):
-	Application {resource_path}, planet_object {} {
+	Application {resource_path}, planet_object {}, star_object {} {
 		initializeGeometry();
 		initializeShaderPrograms();
 	}
@@ -72,8 +79,14 @@ void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 
 void ApplicationSolar::render() const {
 	for (std::vector<Planet>::iterator p = planets.begin(); 
-		p != planets.end(); ++ p) 
+		p != planets.end(); ++ p)
 			upload_planet_transforms(*p);
+	// stars
+	glUseProgram(m_shaders.at("star").handle);
+	// bind the VAO to draw
+	glBindVertexArray(star_object.vertex_AO);
+	// draw bound vertex array using bound shader
+	glDrawArrays(GL_POINTS, 0, 1000);
 }
 
 void ApplicationSolar::updateView() {
@@ -83,12 +96,20 @@ void ApplicationSolar::updateView() {
 	glUniformMatrix4fv(
 		m_shaders.at("planet").u_locs.at("ViewMatrix"),
 		1, GL_FALSE, glm::value_ptr(view_matrix));
+	// upload matrix to gpu
+	glUniformMatrix4fv(
+		m_shaders.at("star").u_locs.at("ViewMatrix"),
+		1, GL_FALSE, glm::value_ptr(view_matrix));
 }
 
 void ApplicationSolar::updateProjection() {
 	// upload matrix to gpu
 	glUniformMatrix4fv(
 		m_shaders.at("planet").u_locs.at("ProjectionMatrix"),
+		1, GL_FALSE, glm::value_ptr(m_view_projection));
+	// upload matrix to gpu
+	glUniformMatrix4fv(
+		m_shaders.at("star").u_locs.at("ProjectionMatrix"),
 		1, GL_FALSE, glm::value_ptr(m_view_projection));
 }
 
@@ -97,6 +118,7 @@ void ApplicationSolar::uploadUniforms() {
 	updateUniformLocations();
 	// bind new shader
 	glUseProgram(m_shaders.at("planet").handle);
+	glUseProgram(m_shaders.at("star").handle);
 	updateView();
 	updateProjection();
 }
@@ -154,6 +176,13 @@ void ApplicationSolar::initializeShaderPrograms() {
 	m_shaders.at("planet").u_locs["ModelMatrix"] = -1;
 	m_shaders.at("planet").u_locs["ViewMatrix"] = -1;
 	m_shaders.at("planet").u_locs["ProjectionMatrix"] = -1;
+	// store shader program objects in container
+	m_shaders.emplace("star", 
+		shader_program{m_resource_path + "shaders/star.vert",
+		m_resource_path + "shaders/star.frag"});
+	// request uniform locations for shader program
+	m_shaders.at("star").u_locs["ViewMatrix"] = -1;
+	m_shaders.at("star").u_locs["ProjectionMatrix"] = -1;
 }
 
 // load models
@@ -206,12 +235,74 @@ void ApplicationSolar::initializeGeometry() {
 	planet_object.draw_mode = GL_TRIANGLES;
 	// transfer number of indices to model object 
 	planet_object.num_elements = GLsizei(planet_model.indices.size());
+	
+	// Stars
+	std::vector <float> star_buffer;
+	for (int i = 0; i < 1000; i ++) {
+		//Assign position for a star
+		star_buffer.push_back(random(-1, 1)); // x
+		star_buffer.push_back(random(-1, 1)); // y
+		star_buffer.push_back(random(-1, 1)); // z
+		//Assign color for a star
+		star_buffer.push_back(random(0, 1)); // r
+		star_buffer.push_back(random(0, 1)); // g
+		star_buffer.push_back(random(0, 1)); // b
+	}
+	model star_model = {
+		star_buffer, 
+		model::POSITION | model::NORMAL};
+	// generate vertex array object
+	glGenVertexArrays(1, &star_object.vertex_AO);
+	// bind the array for attaching buffers
+	glBindVertexArray(star_object.vertex_AO);
+	// generate generic buffer
+	glGenBuffers(1, &star_object.vertex_BO);
+	// bind this as an vertex array buffer containing all attributes
+	glBindBuffer(GL_ARRAY_BUFFER, star_object.vertex_BO);
+	// configure currently bound array buffer
+	glBufferData(
+		GL_ARRAY_BUFFER, 
+		sizeof(float) * star_model.data.size(), 
+		star_model.data.data(), 
+		GL_STATIC_DRAW);
+	// activate first attribute on gpu
+	glEnableVertexAttribArray(0);
+	// first attribute is 3 floats with no offset & stride
+	glVertexAttribPointer(0, 
+		model::POSITION.components, 
+		model::POSITION.type, 
+		GL_FALSE, 
+		star_model.vertex_bytes, 
+		star_model.offsets[model::POSITION]);
+	// activate second attribute on gpu
+	glEnableVertexAttribArray(1);
+	// second attribute is 3 floats with no offset & stride
+	glVertexAttribPointer(1, 
+		model::NORMAL.components,
+		model::NORMAL.type, 
+		GL_FALSE, 
+		star_model.vertex_bytes, 
+		star_model.offsets[model::NORMAL]);
+	// generate generic buffer
+	glGenBuffers(1, &star_object.element_BO);
+	// bind this as an vertex array buffer containing all attributes
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, star_object.element_BO);
+	// configure currently bound array buffer
+	glBufferData(
+		GL_ELEMENT_ARRAY_BUFFER, 
+		model::INDEX.size * star_model.indices.size(), star_model.indices.data(), 
+		GL_STATIC_DRAW);
 }
 
 ApplicationSolar::~ApplicationSolar() {
+	// clear planets
 	glDeleteBuffers(1, &planet_object.vertex_BO);
 	glDeleteBuffers(1, &planet_object.element_BO);
 	glDeleteVertexArrays(1, &planet_object.vertex_AO);
+	// clear stars
+	glDeleteBuffers(1, &star_object.vertex_BO);
+	glDeleteBuffers(1, &star_object.element_BO);
+	glDeleteVertexArrays(1, &star_object.vertex_AO);
 }
 
 // exe entry point
