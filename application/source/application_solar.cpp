@@ -18,16 +18,19 @@ using namespace gl;
 #include <iostream>
 
 std::vector <ApplicationSolar::Planet> planets = {
-	{"sun", 	-1, 109.3800f,    0.000f,  0.00000f},
-	{"mercury",	 0,	  0.3830f,   58.800f,  0.38700f},
-	{"venus", 	 0,	  0.9490f, -244.000f,  0.72300f},
-	{"earth", 	 0,	  1.0000f,    1.000f,  1.00000f},
-	{"moon", 	 3,   0.2724f,   27.400f,  0.00256f},
-	{"mars", 	 0,	  0.5320f,    1.030f,  1.52000f},
-	{"jupiter",	 0,	 11.2100f,    0.415f,  5.20000f},
-	{"saturn", 	 0,	  9.4500f,    0.445f,  9.58000f},
-	{"uranus", 	 0,	  4.0100f,   -0.720f, 19.20000f},
-	{"neptune",	 0,	  3.8800f,    0.673f, 30.05000f}
+	// values modified to appear in the screen.
+	// http://nssdc.gsfc.nasa.gov/planetary/factsheet/planet_table_ratio.html
+	// The moon was modified by a n/10 because its orbit is too close to the earth.
+	{"sun",     -1, 109.3800f,    0.000f,  0.00000f},
+	{"mercury",  0,   0.3830f,   58.800f,  0.38700f},
+	{"venus",    0,   0.9490f, -244.000f,  0.72300f},
+	{"earth",    0,   1.0000f,    1.000f,  1.00000f},
+	{"moon",     3,   0.2724f,   27.400f,  0.02560f},
+	{"mars",     0,   0.5320f,    1.030f,  1.52000f},
+	{"jupiter",  0,  11.2100f,    0.415f,  5.20000f},
+	{"saturn",   0,   9.4500f,    0.445f,  9.58000f},
+	{"uranus",   0,   4.0100f,   -0.720f, 19.20000f},
+	{"neptune",  0,   3.8800f,    0.673f, 30.05000f}
 };
 
 float random (float min, float max) {
@@ -43,21 +46,26 @@ ApplicationSolar::ApplicationSolar(std::string const& resource_path):
 void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 	// bind shader to upload uniforms
 	glUseProgram(m_shaders.at("planet").handle);
-	// create origin matrix
+	// create origin matrix accordint to a model
+	// if p.parent is -1 then set the origin to the world matrix
+	// otherwise find a parent matrix in the model
 	p.origin = p.parent == -1? glm::fmat4 {}: 
 		planets.at((unsigned long) p.parent).origin;
 	// orbit and rotation
 	if (p.orbit != 0.0f) {
 		float angle = glfwGetTime() * p.speed * 0.01f;
+		// rotate around an origin
 		p.origin = glm::rotate(
-			p.origin, angle, glm::fvec3{0, 1.0f, 0});
+		  	p.origin, angle, glm::fvec3{0, 1.0f, 0});
+		// an orbit distance
 		p.origin = glm::translate(
-			p.origin, glm::fvec3 {p.orbit * 4, 0, 0});
+		  	p.origin, glm::fvec3 {p.orbit * 0.8f, 0, 0});
 	}
-	// scale
+	// scale the planet to it's size
 	glm::fmat4 model_matrix = glm::scale(
 		p.origin, glm::vec3(p.diameter / 400));
-	// do routin
+	// do routine 
+	// moved from render method
 	glUniformMatrix4fv(
 		m_shaders.at("planet").u_locs.at("ModelMatrix"),
 		1, GL_FALSE, glm::value_ptr(model_matrix));
@@ -128,44 +136,39 @@ void ApplicationSolar::uploadUniforms() {
 
 // handle key input
 void ApplicationSolar::keyCallback(int key, int scancode, int action, int mods) {
-	// std::cout << action << std::endl;
-	// if (key == 70) mouseActive = action > 0? true: false;
-	// GLFW_PRESS
+	// Key can be continued pressed to move around the screen.
+	// on every keystroke press / hold the 
+	// zoom or slide parameter will be modified and 
+	// the view matrix will be updated
 	float speed = .2f;
+	// KEY w
 	if (key == GLFW_KEY_W && action != GLFW_RELEASE) {
 		zoom -= speed;
-		updateViewPort();
+		updateView();
+	// KEY s
 	} else if (key == GLFW_KEY_S && action != GLFW_RELEASE) {
 		zoom += speed;
-		updateViewPort();
+		updateView();
+	// key a
 	} else if (key == GLFW_KEY_A && action != GLFW_RELEASE) {
 		slide -= speed;
-		updateViewPort();
+		updateView();
+	// key d
 	} else if (key == GLFW_KEY_D && action != GLFW_RELEASE) {
 		slide += speed;
-		updateViewPort();
+		updateView();
 	}
 }
 
 // handle delta mouse movement input
 void ApplicationSolar::mouseCallback(double pos_x, double pos_y) {
-	if (mouseActive) {
+// this method activate the mouse and can be used to move around the solar system
+	if (mouseActive) { // in case if we have a mouse down event
 		float speed = .01f;
 		mouseX += pos_x * speed;
 		mouseY += pos_y * speed;
-		updateViewPort();
+		updateView();
 	}
-}
-
-void ApplicationSolar::updateViewPort() {
-	m_view_transform = glm::fmat4 {};
-	m_view_transform = glm::rotate(
-		m_view_transform, -mouseX, glm::fvec3{0, 1.0f, 0});
-	m_view_transform = glm::rotate(
-		m_view_transform, -mouseY, glm::fvec3{1.0f, 0, 0});
-	m_view_transform = glm::translate(
-		m_view_transform, glm::fvec3{slide, 0, zoom});
-	updateView();
 }
 
 // load shader programs
