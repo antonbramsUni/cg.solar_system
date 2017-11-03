@@ -96,10 +96,12 @@ void ApplicationSolar::updateView() {
 	glUniformMatrix4fv(
 		m_shaders.at("planet").u_locs.at("ViewMatrix"),
 		1, GL_FALSE, glm::value_ptr(view_matrix));
+	glUseProgram(m_shaders.at("planet").handle);
 	// upload matrix to gpu
 	glUniformMatrix4fv(
 		m_shaders.at("star").u_locs.at("ViewMatrix"),
 		1, GL_FALSE, glm::value_ptr(view_matrix));
+	glUseProgram(m_shaders.at("star").handle);
 }
 
 void ApplicationSolar::updateProjection() {
@@ -107,10 +109,12 @@ void ApplicationSolar::updateProjection() {
 	glUniformMatrix4fv(
 		m_shaders.at("planet").u_locs.at("ProjectionMatrix"),
 		1, GL_FALSE, glm::value_ptr(m_view_projection));
+	glUseProgram(m_shaders.at("planet").handle);
 	// upload matrix to gpu
 	glUniformMatrix4fv(
 		m_shaders.at("star").u_locs.at("ProjectionMatrix"),
 		1, GL_FALSE, glm::value_ptr(m_view_projection));
+	glUseProgram(m_shaders.at("star").handle);
 }
 
 // update uniform locations
@@ -118,7 +122,6 @@ void ApplicationSolar::uploadUniforms() {
 	updateUniformLocations();
 	// bind new shader
 	glUseProgram(m_shaders.at("planet").handle);
-	glUseProgram(m_shaders.at("star").handle);
 	updateView();
 	updateProjection();
 }
@@ -240,9 +243,9 @@ void ApplicationSolar::initializeGeometry() {
 	std::vector <float> star_buffer;
 	for (int i = 0; i < 1000; i ++) {
 		//Assign position for a star
-		star_buffer.push_back(random(-1, 1)); // x
-		star_buffer.push_back(random(-1, 1)); // y
-		star_buffer.push_back(random(-1, 1)); // z
+		star_buffer.push_back(random(-4, 4)); // x
+		star_buffer.push_back(random(-4, 4)); // y
+		star_buffer.push_back(random(-4, 4)); // z
 		//Assign color for a star
 		star_buffer.push_back(random(0, 1)); // r
 		star_buffer.push_back(random(0, 1)); // g
