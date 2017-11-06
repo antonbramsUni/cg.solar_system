@@ -21,7 +21,7 @@ std::vector <ApplicationSolar::Planet> planets = {
 	// values modified to appear in the screen.
 	// http://nssdc.gsfc.nasa.gov/planetary/factsheet/planet_table_ratio.html
 	// The moon was modified by a n/10 because its orbit is too close to the earth.
-	{"sun",     -1, 109.3800f,    0.000f,  0.00000f},
+	{"sun",     -1, 10.93800f,    0.000f,  0.00000f},
 	{"mercury",  0,   0.3830f,   58.800f,  0.38700f},
 	{"venus",    0,   0.9490f, -244.000f,  0.72300f},
 	{"earth",    0,   1.0000f,    1.000f,  1.00000f},
@@ -63,7 +63,7 @@ void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 	}
 	// scale the planet to it's size
 	glm::fmat4 model_matrix = glm::scale(
-		p.origin, glm::vec3(p.diameter / 400));
+		p.origin, glm::vec3(p.diameter / 100));
 	// do routine 
 	// moved from render method
 	glUniformMatrix4fv(
@@ -137,6 +137,7 @@ void ApplicationSolar::uploadUniforms() {
 	updateUniformLocations();
 	// bind new shader
 	glUseProgram(m_shaders.at("planet").handle);
+	glUseProgram(m_shaders.at("star").handle);
 	updateView();
 	updateProjection();
 }
@@ -253,9 +254,9 @@ void ApplicationSolar::initializeGeometry() {
 	std::vector <float> star_buffer;
 	for (int i = 0; i < 1000; i ++) {
 		//Assign position for a star
-		star_buffer.push_back(random(-4, 4)); // x
-		star_buffer.push_back(random(-4, 4)); // y
-		star_buffer.push_back(random(-4, 4)); // z
+		star_buffer.push_back(random(-3, 3)); // x
+		star_buffer.push_back(random(-3, 3)); // y
+		star_buffer.push_back(random(-3, 3)); // z
 		//Assign color for a star
 		star_buffer.push_back(random(0, 1)); // r
 		star_buffer.push_back(random(0, 1)); // g
