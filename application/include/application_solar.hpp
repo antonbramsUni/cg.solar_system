@@ -7,6 +7,7 @@
 
 // gpu representation of model
 class ApplicationSolar : public Application {
+	
 	public:
 		
 		struct Planet {
@@ -52,11 +53,13 @@ class ApplicationSolar : public Application {
 		void initializeShaderPrograms();
 		void initializeGeometry();
 		void updateView();
-		// cpu representation of model
+		
+		// a cpu representation of model
 		model_object planet_object, star_object;
 	
 	private:
 		
+		// some mouse controls
 		bool mouseActive = true;
 		float mouseX = 0;
 		float mouseY = 0;
