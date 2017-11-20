@@ -12,23 +12,26 @@ uniform mat4 ProjectionMatrix;
 // uniform mat4 NormalMatrix;
 uniform vec3 LightOrigin;
 uniform vec3 Color;
+uniform float Shading;
 
 out vec3 normal;
 out vec3 light;
 out vec3 view;
 out vec3 color;
+out float shading;
 
 void main (void) {
 	gl_Position = 
 		ProjectionMatrix * ViewMatrix * 
-		ModelMatrix * vec4(in_Position, 1.0);
+		ModelMatrix * vec4(in_Position, 1);
 	vec3 fragment = 
-		(ModelMatrix * vec4(in_Position, 1.0)).xyz;
+		(ModelMatrix * vec4(in_Position, 1)).xyz;
 	vec3 camera = 
-		(inverse(ProjectionMatrix * ViewMatrix) * 
-		vec4(0,0,0, 1.0f)).xyz;
-	view   = normalize(camera - fragment);
-	light  = normalize(LightOrigin - fragment);
-	normal = normalize((ModelMatrix * vec4(in_Normal, .0f)).xyz);
-	color  = Color;
+		(inverse(ViewMatrix) * 
+		vec4(0,0,0, 1)).xyz;
+	view    = normalize(camera - fragment);
+	light   = normalize(LightOrigin - fragment);
+	normal  = normalize((ModelMatrix * vec4(in_Normal, 0)).xyz);
+	color   = Color;
+	shading = Shading;
 }

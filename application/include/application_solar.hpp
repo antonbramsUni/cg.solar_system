@@ -68,6 +68,9 @@ class ApplicationSolar : public Application {
 		float mouseY = 0;
 		float zoom   = 4;
 		float slide  = 0;
+		
+		// shading control
+		GLfloat shading = 0;
 };
 
 #endif
