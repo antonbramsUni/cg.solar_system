@@ -24,11 +24,8 @@ void main (void) {
 	gl_Position = 
 		ProjectionMatrix * ViewMatrix * 
 		ModelMatrix * vec4(in_Position, 1);
-	vec3 fragment = 
-		(ModelMatrix * vec4(in_Position, 1)).xyz;
-	vec3 camera = 
-		(inverse(ViewMatrix) * 
-		vec4(0,0,0, 1)).xyz;
+	vec3 fragment = (ModelMatrix * vec4(in_Position, 1)).xyz;
+	vec3 camera = (inverse(ViewMatrix) * vec4(0,0,0, 1)).xyz;
 	view    = normalize(camera - fragment);
 	light   = normalize(LightOrigin - fragment);
 	normal  = normalize((ModelMatrix * vec4(in_Normal, 0)).xyz);
