@@ -16,19 +16,22 @@ class ApplicationSolar : public Application {
 			float diameter;
 			float speed;
 			float orbit;
+			glm::fvec3 color;
 			glm::fmat4 origin;
 			Planet(
 				std::string _name,
 			 	int _parent,
 				float _diameter,
 				float _speed,
-				float _orbit
+				float _orbit,
+				glm::fvec3 _color
 			){
 				name 	 = _name;
 				parent 	 = _parent;
 				diameter = _diameter;
 				speed 	 = _speed;
 				orbit 	 = _orbit;
+				color 	 = _color;
 			};
 		};
 		

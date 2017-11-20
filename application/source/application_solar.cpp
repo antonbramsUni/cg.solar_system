@@ -21,16 +21,16 @@ std::vector <ApplicationSolar::Planet> planets = {
 	// values modified to appear in the screen.
 	// http://nssdc.gsfc.nasa.gov/planetary/factsheet/planet_table_ratio.html
 	// The sun and moon were modified by a n/10 size
-	{"sun",     -1, 10.93800f,    0.000f,  0.00000f},
-	{"mercury",  0,   0.3830f,   58.800f,  0.38700f},
-	{"venus",    0,   0.9490f, -244.000f,  0.72300f},
-	{"earth",    0,   1.0000f,    1.000f,  1.00000f},
-	{"moon",     3,   0.2724f,   27.400f,  0.02560f},
-	{"mars",     0,   0.5320f,    1.030f,  1.52000f},
-	{"jupiter",  0,  11.2100f,    0.415f,  5.20000f},
-	{"saturn",   0,   9.4500f,    0.445f,  9.58000f},
-	{"uranus",   0,   4.0100f,   -0.720f, 19.20000f},
-	{"neptune",  0,   3.8800f,    0.673f, 30.05000f}
+	{"sun",     -1, 10.93800f,    0.000f,  0.00000f, {0,1,1}},
+	{"mercury",  0,   0.3830f,   58.800f,  0.38700f, {1,0,1}},
+	{"venus",    0,   0.9490f, -244.000f,  0.72300f, {1,1,0}},
+	{"earth",    0,   1.0000f,    1.000f,  1.00000f, {0,1,1}},
+	{"moon",     3,   0.2724f,   27.400f,  0.02560f, {1,0,1}},
+	{"mars",     0,   0.5320f,    1.030f,  1.52000f, {1,1,0}},
+	{"jupiter",  0,  11.2100f,    0.415f,  5.20000f, {0,1,1}},
+	{"saturn",   0,   9.4500f,    0.445f,  9.58000f, {1,0,1}},
+	{"uranus",   0,   4.0100f,   -0.720f, 19.20000f, {1,1,0}},
+	{"neptune",  0,   3.8800f,    0.673f, 30.05000f, {0,1,1}}
 };
 
 // random function that generates position or colors
@@ -64,18 +64,21 @@ void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 	}
 	// scale the planet to it's size
 	glm::fmat4 model_matrix = glm::scale(
-		p.origin, glm::vec3(p.diameter / 100));
+		p.origin, glm::vec3(p.diameter / 100)); // 100
 	// do open gl routine 
 	// moved from render method
 	glUniformMatrix4fv(
 		m_shaders.at("planet").u_locs.at("ModelMatrix"),
 		1, GL_FALSE, glm::value_ptr(model_matrix));
+	glUniform3fv(
+		m_shaders.at("planet").u_locs.at("Color"),
+		1, glm::value_ptr(p.color));
 	// extra matrix for normal transformation to keep them orthogonal to surface
-	glm::fmat4 normal_matrix = glm::inverseTranspose(
-		glm::inverse(m_view_transform) * model_matrix);
-	glUniformMatrix4fv(
-		m_shaders.at("planet").u_locs.at("NormalMatrix"),
-		1, GL_FALSE, glm::value_ptr(normal_matrix));
+	// glm::fmat4 normal_matrix = glm::inverseTranspose(
+	// 	glm::inverse(m_view_transform) * model_matrix);
+	// glUniformMatrix4fv(
+	// 	m_shaders.at("planet").u_locs.at("NormalMatrix"),
+	// 	1, GL_FALSE, glm::value_ptr(normal_matrix));
 	// bind the VAO to draw
 	glBindVertexArray(planet_object.vertex_AO);
 	// draw bound vertex array using bound shader
@@ -117,9 +120,9 @@ void ApplicationSolar::updateView() {
 	glUniformMatrix4fv(
 		m_shaders.at("planet").u_locs.at("ViewMatrix"),
 		1, GL_FALSE, glm::value_ptr(view_matrix));
-	// glUniformMatrix4fv(
-	// 	m_shaders.at("planet").u_locs.at("LightSource"),
-	// 	1, GL_FALSE, glm::value_ptr(model_matrix));
+	glUniform3fv(
+		m_shaders.at("planet").u_locs.at("LightOrigin"),
+		1, glm::value_ptr(glm::fvec3{0,0,0}));
 	// upload matrix to gpu
 	glUseProgram(m_shaders.at("star").handle);
 	glUniformMatrix4fv(
@@ -143,7 +146,7 @@ void ApplicationSolar::updateProjection() {
 // update uniform locations
 void ApplicationSolar::uploadUniforms() {
 	updateUniformLocations();
-	// bind new shader
+	// planet
 	updateView();
 	updateProjection();
 }
@@ -193,10 +196,12 @@ void ApplicationSolar::initializeShaderPrograms() {
 		shader_program{m_resource_path + "shaders/simple.vert",
 		m_resource_path + "shaders/simple.frag"});
 	// request uniform locations for planet shader program
-	m_shaders.at("planet").u_locs["NormalMatrix"]     = -1;
+	// m_shaders.at("planet").u_locs["NormalMatrix"]     = -1;
 	m_shaders.at("planet").u_locs["ModelMatrix"]      = -1;
 	m_shaders.at("planet").u_locs["ViewMatrix"]       = -1;
 	m_shaders.at("planet").u_locs["ProjectionMatrix"] = -1;
+	m_shaders.at("planet").u_locs["LightOrigin"]      = -1;
+	m_shaders.at("planet").u_locs["Color"]      	  = -1;
 	// store shader program objects in container
 	m_shaders.emplace("star", 
 		shader_program{m_resource_path + "shaders/star.vert",
@@ -257,7 +262,7 @@ void ApplicationSolar::initializeGeometry() {
 	planet_object.draw_mode = GL_TRIANGLES;
 	// transfer number of indices to model object 
 	planet_object.num_elements = GLsizei(planet_model.indices.size());
-	
+		
 	// generate star vertex & color 
 	std::vector <float> star_buffer;
 	for (int i = 0; i < 5000; i ++) {
