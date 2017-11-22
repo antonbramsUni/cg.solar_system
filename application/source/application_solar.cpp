@@ -66,6 +66,7 @@ void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 	glm::fmat4 model_matrix = glm::scale(
 		p.origin, glm::vec3(p.diameter / 100)); // 100
 	// do open gl routine 
+	// assigning 2 to the sun for shading in the if statement 
 	GLfloat type = p.name == "sun"? 2.f: shading;
 	glUniform1fv(
 		m_shaders.at("planet").u_locs.at("Shading"),
@@ -73,6 +74,7 @@ void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 	glUniformMatrix4fv(
 		m_shaders.at("planet").u_locs.at("ModelMatrix"),
 		1, GL_FALSE, glm::value_ptr(model_matrix));
+	// color sent to vertex
 	glUniform3fv(
 		m_shaders.at("planet").u_locs.at("Color"),
 		1, glm::value_ptr(p.color));
@@ -179,7 +181,7 @@ void ApplicationSolar::keyCallback(int key, int scancode, int action, int mods) 
 		slide += speed;
 		updateView();
 	}
-	// phong vs cell Shading
+	// Phong vs Cell Shading
 	shading = key == 49? .0f: key == 50? 1.f: shading;
 }
 
