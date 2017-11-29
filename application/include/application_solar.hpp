@@ -18,8 +18,9 @@ class ApplicationSolar : public Application {
 			float orbit;
 			glm::fvec3 color;
 			glm::fmat4 origin;
-			texture_object texture;
-			unsigned int textureID;
+			texture_object textureColor;
+			texture_object textureNormal;
+			unsigned int id;
 			Planet(
 				std::string _name,
 			 	int _parent,
@@ -27,15 +28,15 @@ class ApplicationSolar : public Application {
 				float _speed,
 				float _orbit,
 				glm::fvec3 _color,
-				unsigned int _textureID
+				unsigned int _id
 			){
-				name 	  = _name;
-				parent 	  = _parent;
-				diameter  = _diameter;
-				speed 	  = _speed;
-				orbit 	  = _orbit;
-				color 	  = _color;
-				textureID = _textureID;
+				name 	 = _name;
+				parent 	 = _parent;
+				diameter = _diameter;
+				speed 	 = _speed;
+				orbit 	 = _orbit;
+				color 	 = _color;
+				id = _id;
 			};
 		};
 		

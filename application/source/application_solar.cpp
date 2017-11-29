@@ -34,6 +34,8 @@ std::vector <ApplicationSolar::Planet> planets = {
 	{"neptune",  0,   3.8800f,    0.673f, 30.05000f, {0,1,1}, 9}
 };
 
+texture_object star_texture;
+
 // random function that generates position or colors
 float random (float min, float max) {
 	return (max - min) * (float(rand() % 100) / 100) + min;
@@ -42,12 +44,22 @@ float random (float min, float max) {
 ApplicationSolar::ApplicationSolar(std::string const& resource_path):
 	Application {resource_path}, planet_object {}, star_object {} {
 		std::string textures = resource_path + "textures/";
+		// init stars
+		star_texture = utils::create_texture_object(
+			texture_loader::file(textures +"stars.png"));
 		// generate texture for every planet
 		for (std::vector<Planet>::iterator p = planets.begin(); 
 			p != planets.end(); ++ p) {
-				std::cout << "[loading textures] " + textures + p->name +".png" << std::endl;
-				p->texture = utils::create_texture_object(
-					texture_loader::file(textures + p->name +".png"));
+				std::string path = textures + p->name +".png";
+				std::cout << "[loading color] "+ path<< std::endl;
+				p->textureColor = utils::create_texture_object(
+					texture_loader::file(path));
+				if (p->name == "earth") {
+					std::string path = textures + p->name +"_normal.png";
+					std::cout << "[loading normal] "+ path << std::endl;
+					p->textureNormal = utils::create_texture_object(
+						texture_loader::file(path));
+				}
 			}
 		// initialize other stuff
 		initializeGeometry();
@@ -57,12 +69,22 @@ ApplicationSolar::ApplicationSolar(std::string const& resource_path):
 void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 	// bind shader to upload uniforms
 	glUseProgram(m_shaders.at("planet").handle);
-	// bind texture
-	glActiveTexture(GL_TEXTURE0 + p.textureID);
+	// bind texture_color
+	glActiveTexture(GL_TEXTURE0 + p.id + 1);
 	glBindTexture(
 		GL_TEXTURE_2D, 
-		p.texture.handle);
-	glUniform1i(m_shaders.at("planet").u_locs.at("ColorTex"), p.textureID);
+		p.textureColor.handle);
+	glUniform1i(
+		m_shaders.at("planet").u_locs.at("TextureColor"), 
+		p.id + 1);
+	// bind texture_normal
+	glActiveTexture(GL_TEXTURE0 + p.id + 1 + 10);
+	glBindTexture(
+		GL_TEXTURE_2D, 
+		p.textureNormal.handle);
+	glUniform1i(
+		m_shaders.at("planet").u_locs.at("TextureNormal"), 
+		p.id + 1 + 10);
 	// create origin matrix accordint to a model
 	// if p.parent is -1 then set the origin to the world matrix
 	// otherwise find a parent matrix in the model
@@ -83,23 +105,16 @@ void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 		p.origin, glm::vec3(p.diameter / 100)); // 100
 	// do open gl routine 
 	// assigning 2 to the sun for shading in the if statement 
-	GLint type = p.name == "sun"? 2: shading;
+	GLint id = p.id;
+	glUniform1iv(
+		m_shaders.at("planet").u_locs.at("ID"),
+		1, &id);
 	glUniform1iv(
 		m_shaders.at("planet").u_locs.at("Shading"),
-		1, &type);
+		1, &shading);
 	glUniformMatrix4fv(
 		m_shaders.at("planet").u_locs.at("ModelMatrix"),
 		1, GL_FALSE, glm::value_ptr(model_matrix));
-	// color sent to vertex
-	glUniform3fv(
-		m_shaders.at("planet").u_locs.at("Color"),
-		1, glm::value_ptr(p.color));
-	// extra matrix for normal transformation to keep them orthogonal to surface
-	// glm::fmat4 normal_matrix = glm::inverseTranspose(
-	// 	glm::inverse(m_view_transform) * model_matrix);
-	// glUniformMatrix4fv(
-	// 	m_shaders.at("planet").u_locs.at("NormalMatrix"),
-	// 	1, GL_FALSE, glm::value_ptr(normal_matrix));
 	// bind the VAO to draw
 	glBindVertexArray(planet_object.vertex_AO);
 	// draw bound vertex array using bound shader
@@ -117,12 +132,27 @@ void ApplicationSolar::render() const {
 			upload_planet_transforms(*p);
 	// bind star shaders
 	glUseProgram(m_shaders.at("star").handle);
+	// bind texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(
+		GL_TEXTURE_2D, 
+		star_texture.handle);
+	glUniform1i(
+		m_shaders.at("star").u_locs.at("ColorTex"), 0);
+	// do transformations
+	glm::fmat4 model_matrix = glm::scale(
+		glm::fmat4 {}, glm::vec3(10));
+	glUniformMatrix4fv(
+		m_shaders.at("star").u_locs.at("ModelMatrix"),
+		1, GL_FALSE, glm::value_ptr(model_matrix));
 	// bind the VAO to draw
 	glBindVertexArray(star_object.vertex_AO);
 	// draw bound vertex array using bound shader
-	glDrawArrays(
-		star_object.draw_mode, 0, 
-		star_object.num_elements);
+	glDrawElements(
+		star_object.draw_mode, 
+		star_object.num_elements, 
+		model::INDEX.type, 
+		NULL);
 }
 
 void ApplicationSolar::updateView() {
@@ -224,16 +254,19 @@ void ApplicationSolar::initializeShaderPrograms() {
 	m_shaders.at("planet").u_locs["ViewMatrix"]       = -1;
 	m_shaders.at("planet").u_locs["ProjectionMatrix"] = -1;
 	m_shaders.at("planet").u_locs["LightOrigin"]      = -1;
-	m_shaders.at("planet").u_locs["Color"]      	  = -1;
 	m_shaders.at("planet").u_locs["Shading"]      	  = -1;
-	m_shaders.at("planet").u_locs["ColorTex"]      	  = -1;
+	m_shaders.at("planet").u_locs["TextureColor"] 	  = -1;
+	m_shaders.at("planet").u_locs["TextureNormal"] 	  = -1;
+	m_shaders.at("planet").u_locs["ID"] 		  	  = -1;
 	// store shader program objects in container
 	m_shaders.emplace("star", 
 		shader_program{m_resource_path + "shaders/star.vert",
 		m_resource_path + "shaders/star.frag"});
 	// request uniform locations for star shader program
+	m_shaders.at("star").u_locs["ModelMatrix"]      = -1;
 	m_shaders.at("star").u_locs["ViewMatrix"]       = -1;
 	m_shaders.at("star").u_locs["ProjectionMatrix"] = -1;
+	m_shaders.at("star").u_locs["ColorTex"]      	= -1;
 }
 
 // load models
@@ -294,23 +327,10 @@ void ApplicationSolar::initializeGeometry() {
 	// transfer number of indices to model object 
 	planet_object.num_elements = GLsizei(planet_model.indices.size());
 		
-	// generate star vertex & color 
-	std::vector <float> star_buffer;
-	for (int i = 0; i < 5000; i ++) {
-		// Assign xyz position for a star
-		star_buffer.push_back(random(-3, 3)); // x
-		star_buffer.push_back(random(-3, 3)); // y
-		star_buffer.push_back(random(-3, 3)); // z
-		// Assign rgb color for a star
-		star_buffer.push_back(random(.5, 1)); // r
-		star_buffer.push_back(random(.5, 1)); // g
-		star_buffer.push_back(random(.5, 1)); // b
-	}
-	// generate a star model and pass position and color
-	// because this framework doesn't have a color channel, 
-	// we'll use the normal channel 
-	// to pass the color to the vertex shader 
-	model star_model = {star_buffer, model::POSITION | model::NORMAL};
+	// load a skystuff object and save it into a model
+	model star_model = model_loader::obj(
+		m_resource_path + "models/sphere.obj", 
+		model::TEXCOORD);
 	// generate vertex array object
 	glGenVertexArrays(1, &star_object.vertex_AO);
 	// bind the array for attaching buffers
@@ -327,7 +347,6 @@ void ApplicationSolar::initializeGeometry() {
 		GL_STATIC_DRAW);
 	// activate first attribute on gpu
 	glEnableVertexAttribArray(0);
-	// first attribute is 3 floats with no offset & stride
 	glVertexAttribPointer(0, 
 		model::POSITION.components, 
 		model::POSITION.type, 
@@ -336,13 +355,12 @@ void ApplicationSolar::initializeGeometry() {
 		star_model.offsets[model::POSITION]);
 	// activate second attribute on gpu
 	glEnableVertexAttribArray(1);
-	// second attribute is 3 floats with no offset & stride
 	glVertexAttribPointer(1, 
-		model::NORMAL.components,
-		model::NORMAL.type, 
+		model::TEXCOORD.components,
+		model::TEXCOORD.type, 
 		GL_FALSE, 
 		star_model.vertex_bytes, 
-		star_model.offsets[model::NORMAL]);
+		star_model.offsets[model::TEXCOORD]);
 	// generate generic buffer
 	glGenBuffers(1, &star_object.element_BO);
 	// bind this as an vertex array buffer containing all attributes
@@ -354,9 +372,9 @@ void ApplicationSolar::initializeGeometry() {
 		star_model.indices.data(), 
 		GL_STATIC_DRAW);
 	// store type of primitive to draw
-	star_object.draw_mode = GL_POINTS;
+	star_object.draw_mode = GL_TRIANGLES;
 	// transfer number of indices to model object 
-	star_object.num_elements = GLsizei(star_model.data.size());
+	star_object.num_elements = GLsizei(star_model.indices.size());
 }
 
 ApplicationSolar::~ApplicationSolar() {

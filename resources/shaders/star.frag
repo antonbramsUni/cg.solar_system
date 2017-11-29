@@ -1,9 +1,12 @@
+
 #version 150
 
-in  vec3 pass_Color;
-out vec4 out_Color;
+in  vec2  pass_TexCoord;
+out vec4  out_Color;
+uniform sampler2D ColorTex;
 
-void main() {
-	out_Color = vec4(pass_Color, 1.0);
-	// out_Color = vec4(0,0,0, 1.0);
+void main () {
+	// texture
+	vec3 color = texture(ColorTex, pass_TexCoord).rgb;
+	out_Color = vec4(color, 1.0);
 }
