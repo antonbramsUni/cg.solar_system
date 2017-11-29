@@ -5,6 +5,7 @@
 #include "utils.hpp"
 #include "shader_loader.hpp"
 #include "model_loader.hpp"
+#include "texture_loader.hpp"
 #include <glbinding/gl/gl.h>
 #include <stdlib.h>
 // use gl definitions from glbinding 
@@ -21,16 +22,16 @@ std::vector <ApplicationSolar::Planet> planets = {
 	// values modified to appear in the screen.
 	// http://nssdc.gsfc.nasa.gov/planetary/factsheet/planet_table_ratio.html
 	// The sun and moon were modified by a n/10 size
-	{"sun",     -1, 10.93800f,    0.000f,  0.00000f, {1,1,0}},
-	{"mercury",  0,   0.3830f,   58.800f,  0.38700f, {1,0,1}},
-	{"venus",    0,   0.9490f, -244.000f,  0.72300f, {1,1,0}},
-	{"earth",    0,   1.0000f,    1.000f,  1.00000f, {0,1,1}},
-	{"moon",     3,   0.2724f,   27.400f,  0.02560f, {1,0,1}},
-	{"mars",     0,   0.5320f,    1.030f,  1.52000f, {1,1,0}},
-	{"jupiter",  0,  11.2100f,    0.415f,  5.20000f, {0,1,1}},
-	{"saturn",   0,   9.4500f,    0.445f,  9.58000f, {1,0,1}},
-	{"uranus",   0,   4.0100f,   -0.720f, 19.20000f, {1,1,0}},
-	{"neptune",  0,   3.8800f,    0.673f, 30.05000f, {0,1,1}}
+	{"sun",     -1, 10.93800f,    0.000f,  0.00000f, {1,1,0}, 0},
+	{"mercury",  0,   0.3830f,   58.800f,  0.38700f, {1,0,1}, 1},
+	{"venus",    0,   0.9490f, -244.000f,  0.72300f, {1,1,0}, 2},
+	{"earth",    0,   1.0000f,    1.000f,  1.00000f, {0,1,1}, 3},
+	{"moon",     3,   0.2724f,   27.400f,  0.02560f, {1,0,1}, 4},
+	{"mars",     0,   0.5320f,    1.030f,  1.52000f, {1,1,0}, 5},
+	{"jupiter",  0,  11.2100f,    0.415f,  5.20000f, {0,1,1}, 6},
+	{"saturn",   0,   9.4500f,    0.445f,  9.58000f, {1,0,1}, 7},
+	{"uranus",   0,   4.0100f,   -0.720f, 19.20000f, {1,1,0}, 8},
+	{"neptune",  0,   3.8800f,    0.673f, 30.05000f, {0,1,1}, 9}
 };
 
 // random function that generates position or colors
@@ -40,6 +41,15 @@ float random (float min, float max) {
 
 ApplicationSolar::ApplicationSolar(std::string const& resource_path):
 	Application {resource_path}, planet_object {}, star_object {} {
+		std::string textures = resource_path + "textures/";
+		// generate texture for every planet
+		for (std::vector<Planet>::iterator p = planets.begin(); 
+			p != planets.end(); ++ p) {
+				std::cout << "[loading textures] " + textures + p->name +".png" << std::endl;
+				p->texture = utils::create_texture_object(
+					texture_loader::file(textures + p->name +".png"));
+			}
+		// initialize other stuff
 		initializeGeometry();
 		initializeShaderPrograms();
 	}
@@ -47,6 +57,12 @@ ApplicationSolar::ApplicationSolar(std::string const& resource_path):
 void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 	// bind shader to upload uniforms
 	glUseProgram(m_shaders.at("planet").handle);
+	// bind texture
+	glActiveTexture(GL_TEXTURE0 + p.textureID);
+	glBindTexture(
+		GL_TEXTURE_2D, 
+		p.texture.handle);
+	glUniform1i(m_shaders.at("planet").u_locs.at("ColorTex"), p.textureID);
 	// create origin matrix accordint to a model
 	// if p.parent is -1 then set the origin to the world matrix
 	// otherwise find a parent matrix in the model
@@ -67,8 +83,8 @@ void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 		p.origin, glm::vec3(p.diameter / 100)); // 100
 	// do open gl routine 
 	// assigning 2 to the sun for shading in the if statement 
-	GLfloat type = p.name == "sun"? 2.f: shading;
-	glUniform1fv(
+	GLint type = p.name == "sun"? 2: shading;
+	glUniform1iv(
 		m_shaders.at("planet").u_locs.at("Shading"),
 		1, &type);
 	glUniformMatrix4fv(
@@ -182,7 +198,7 @@ void ApplicationSolar::keyCallback(int key, int scancode, int action, int mods) 
 		updateView();
 	}
 	// Phong vs Cell Shading
-	shading = key == 49? .0f: key == 50? 1.f: shading;
+	shading = key == 49? 0: key == 50? 1: shading;
 }
 
 // handle delta mouse movement input
@@ -204,13 +220,13 @@ void ApplicationSolar::initializeShaderPrograms() {
 		shader_program{m_resource_path + "shaders/simple.vert",
 		m_resource_path + "shaders/simple.frag"});
 	// request uniform locations for planet shader program
-	// m_shaders.at("planet").u_locs["NormalMatrix"]     = -1;
 	m_shaders.at("planet").u_locs["ModelMatrix"]      = -1;
 	m_shaders.at("planet").u_locs["ViewMatrix"]       = -1;
 	m_shaders.at("planet").u_locs["ProjectionMatrix"] = -1;
 	m_shaders.at("planet").u_locs["LightOrigin"]      = -1;
 	m_shaders.at("planet").u_locs["Color"]      	  = -1;
 	m_shaders.at("planet").u_locs["Shading"]      	  = -1;
+	m_shaders.at("planet").u_locs["ColorTex"]      	  = -1;
 	// store shader program objects in container
 	m_shaders.emplace("star", 
 		shader_program{m_resource_path + "shaders/star.vert",
@@ -224,7 +240,8 @@ void ApplicationSolar::initializeShaderPrograms() {
 void ApplicationSolar::initializeGeometry() {
 	// load a planet object and save it into a model
 	model planet_model = model_loader::obj(
-		m_resource_path + "models/sphere.obj", model::NORMAL);
+		m_resource_path + "models/sphere.obj", 
+		model::NORMAL | model::TEXCOORD);
 	// generate vertex array object
 	glGenVertexArrays(1, &planet_object.vertex_AO);
 	// bind the array for attaching buffers
@@ -241,7 +258,6 @@ void ApplicationSolar::initializeGeometry() {
 		GL_STATIC_DRAW);
 	// activate first attribute on gpu
 	glEnableVertexAttribArray(0);
-	// first attribute is 3 floats with no offset & stride
 	glVertexAttribPointer(0, 
 		model::POSITION.components, 
 		model::POSITION.type, GL_FALSE, 
@@ -249,12 +265,18 @@ void ApplicationSolar::initializeGeometry() {
 		planet_model.offsets[model::POSITION]);
 	// activate second attribute on gpu
 	glEnableVertexAttribArray(1);
-	// second attribute is 3 floats with no offset & stride
 	glVertexAttribPointer(1, 
 		model::NORMAL.components, 
 		model::NORMAL.type, GL_FALSE, 
 		planet_model.vertex_bytes, 
 		planet_model.offsets[model::NORMAL]);
+	// activate third attribute for colors
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 
+		model::TEXCOORD.components, 
+		model::TEXCOORD.type, GL_FALSE, 
+		planet_model.vertex_bytes, 
+		planet_model.offsets[model::TEXCOORD]);
 	// generate generic buffer
 	glGenBuffers(1, &planet_object.element_BO);
 	// bind this as an vertex array buffer containing all attributes

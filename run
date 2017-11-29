@@ -19,7 +19,9 @@ case "$1" in
 	"rs")
 		cd build
 		make
-		./Debug/solar_system
+		if [ $? -ne 2 ]; then 
+			./Debug/solar_system
+		fi
 		cd ..
 	;;
 	*)

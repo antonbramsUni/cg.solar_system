@@ -5,30 +5,33 @@
 // vertex attributes of VAO
 layout(location = 0) in vec3 in_Position;
 layout(location = 1) in vec3 in_Normal;
-//Matrix Uniforms as specified with glUniformMatrix4fv
-uniform mat4 ModelMatrix;
-uniform mat4 ViewMatrix;
-uniform mat4 ProjectionMatrix;
-// uniform mat4 NormalMatrix;
-uniform vec3 LightOrigin;
-uniform vec3 Color;
-uniform float Shading;
+layout(location = 2) in vec2 in_TexCoord;
 
-out vec3 normal;
-out vec3 light;
-out vec3 view;
-out vec3 color;
-out float shading;
+uniform mat4  ModelMatrix;
+uniform mat4  ViewMatrix;
+uniform mat4  ProjectionMatrix;
+uniform vec3  LightOrigin;
+uniform vec3  Color;
+uniform int   Shading;
+
+out vec3  normal;
+out vec3  light;
+out vec3  view;
+out vec3  color;
+out vec2  pass_TexCoord;
+flat out int   shading;
 
 void main (void) {
+	vec3 vertex = (ModelMatrix * vec4(in_Position, 1)).xyz;
+	vec3 camera = (inverse(ViewMatrix) * vec4(0,0,0, 1)).xyz;
+	// outs
 	gl_Position = 
 		ProjectionMatrix * ViewMatrix * 
 		ModelMatrix * vec4(in_Position, 1);
-	vec3 fragment = (ModelMatrix * vec4(in_Position, 1)).xyz;
-	vec3 camera = (inverse(ViewMatrix) * vec4(0,0,0, 1)).xyz;
-	view    = normalize(camera - fragment);
-	light   = normalize(LightOrigin - fragment);
+	view    = normalize(camera - vertex);
+	light   = normalize(LightOrigin - vertex);
 	normal  = normalize((ModelMatrix * vec4(in_Normal, 0)).xyz);
 	color   = Color;
 	shading = Shading;
+	pass_TexCoord = in_TexCoord;
 }

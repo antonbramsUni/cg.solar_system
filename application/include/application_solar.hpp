@@ -18,20 +18,24 @@ class ApplicationSolar : public Application {
 			float orbit;
 			glm::fvec3 color;
 			glm::fmat4 origin;
+			texture_object texture;
+			unsigned int textureID;
 			Planet(
 				std::string _name,
 			 	int _parent,
 				float _diameter,
 				float _speed,
 				float _orbit,
-				glm::fvec3 _color
+				glm::fvec3 _color,
+				unsigned int _textureID
 			){
-				name 	 = _name;
-				parent 	 = _parent;
-				diameter = _diameter;
-				speed 	 = _speed;
-				orbit 	 = _orbit;
-				color 	 = _color;
+				name 	  = _name;
+				parent 	  = _parent;
+				diameter  = _diameter;
+				speed 	  = _speed;
+				orbit 	  = _orbit;
+				color 	  = _color;
+				textureID = _textureID;
 			};
 		};
 		
@@ -70,7 +74,7 @@ class ApplicationSolar : public Application {
 		float slide  = 0;
 		
 		// shading control
-		GLfloat shading = 0;
+		GLint shading = 0;
 };
 
 #endif
