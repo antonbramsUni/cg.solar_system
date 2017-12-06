@@ -1,10 +1,11 @@
 
 #version 150
 
-in  vec3 normal;
-in  vec3 light;
-in  vec3 view;
-in  vec2 pass_TexCoord;
+in vec3 normal;
+in vec3 light;
+in vec3 view;
+in vec2 textCoord;
+in vec3 tangent;
 flat in int shading;
 flat in int id;
 uniform sampler2D TextureColor;
@@ -23,9 +24,15 @@ void main () {
 	// color settings
 	vec3 lightColor = vec3(1, 1, 1);
 	// texture
-	vec3 textureColor  = texture(TextureColor,  pass_TexCoord).rgb;
-	vec3 textureNormal = texture(TextureNormal, pass_TexCoord).rgb;
+	vec3 textureColor = texture(TextureColor,  textCoord).rgb;
 	vec3 norm = normal;
+	if (id == 3) {
+		vec3 tn   = texture(TextureNormal, textCoord).rgb;
+		vec3 bi   = normalize(cross(normal, tangent));
+		mat3 tbn  = mat3(tangent, bi, normal);
+		norm = normalize(tbn * tn);
+	}
+	// vec3 norm = normal;
 	// ambient
 	float ambientStrength  = .15;
 	vec3 ambient = ambientStrength * lightColor;

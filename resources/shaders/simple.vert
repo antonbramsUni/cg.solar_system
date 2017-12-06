@@ -6,8 +6,10 @@
 layout(location = 0) in vec3 in_Position;
 layout(location = 1) in vec3 in_Normal;
 layout(location = 2) in vec2 in_TexCoord;
+layout(location = 3) in vec3 in_Tangent;
 
 uniform mat4 ModelMatrix;
+uniform mat4 NormalMatrix;
 uniform mat4 ViewMatrix;
 uniform mat4 ProjectionMatrix;
 uniform vec3 LightOrigin;
@@ -17,7 +19,8 @@ uniform int  ID;
 out vec3 normal;
 out vec3 light;
 out vec3 view;
-out vec2 pass_TexCoord;
+out vec2 textCoord;
+out vec3 tangent;
 flat out int shading;
 flat out int id;
 
@@ -28,10 +31,11 @@ void main (void) {
 	gl_Position = 
 		ProjectionMatrix * ViewMatrix * 
 		ModelMatrix * vec4(in_Position, 1);
-	view    = normalize(camera - vertex);
-	light   = normalize(LightOrigin - vertex);
-	normal  = normalize((ModelMatrix * vec4(in_Normal, 0)).xyz);
-	shading = Shading;
-	pass_TexCoord = in_TexCoord;
+	view      = normalize(camera - vertex);
+	light     = normalize(LightOrigin - vertex);
+	normal    = normalize((ModelMatrix * vec4(in_Normal, 0)).xyz);
+	shading   = Shading;
+	textCoord = in_TexCoord;
+	tangent   = normalize((NormalMatrix * vec4(in_Tangent, 1)).xyz);
 	id = ID;
 }
