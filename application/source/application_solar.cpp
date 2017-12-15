@@ -68,20 +68,22 @@ ApplicationSolar::ApplicationSolar(std::string const& resource_path):
 	initializeGeometry();
 	initializeShaderPrograms();
 	// create texture
-	glActiveTexture(GL_TEXTURE13);
+	int width  = 640 * 2;
+	int height = 480 * 2;
+	glActiveTexture(GL_TEXTURE25);
 	glGenTextures(1, &tex_handle);
 	glBindTexture(GL_TEXTURE_2D, tex_handle);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(
 		GL_TEXTURE_2D, 0, GL_RGB, 
-		640, 480, 0, GL_RGB, 
+		width, height, 0, GL_RGB, 
 		GL_UNSIGNED_BYTE, 0);
 	glGenRenderbuffers(1, &rbo_handle);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo_handle);
 	glRenderbufferStorage(
 		GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 
-		640, 480);
+		width, height);
 	glGenFramebuffers(1, &fbo_handle);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo_handle);
 	glFramebufferTexture(
@@ -94,10 +96,6 @@ ApplicationSolar::ApplicationSolar(std::string const& resource_path):
 	glDrawBuffers(1, draw_buffer);
 	GLenum draw_buffers[1] = {GL_COLOR_ATTACHMENT0};
 	glDrawBuffers(1, draw_buffers);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) 
-		!= GL_FRAMEBUFFER_COMPLETE)
-			// https://www.youtube.com/watch?v=4F4qzPbcFiA
-			std::cerr << "it's a trap!" << std::endl;
 }
 
 void ApplicationSolar::upload_planet_transforms(Planet &p) const {
@@ -166,9 +164,10 @@ void ApplicationSolar::upload_planet_transforms(Planet &p) const {
 }
 
 void ApplicationSolar::render() const {
+	// frame buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo_handle);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// draw planets
 	for (std::vector<Planet>::iterator p = planets.begin(); 
 		p != planets.end(); ++ p)
@@ -196,31 +195,19 @@ void ApplicationSolar::render() const {
 		star_object.num_elements, 
 		model::INDEX.type, 
 		NULL);
-	// render quad
+	// frame buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
 	glDisable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT);
+	// render quad
 	glBindVertexArray(quad_object.vertex_AO);
 	glUseProgram(m_shaders.at("quad").handle);
-	glActiveTexture(GL_TEXTURE13);
-	glUniform1i(m_shaders.at("quad").u_locs.at("Texture"), 13);
-	GLuint loc;
-	loc = glGetUniformLocation(
-		m_shaders.at("quad").handle, 
-		"opts.grayscale");
-	glUniform1i(loc, renderopts.grayscale);
-	loc = glGetUniformLocation(
-		m_shaders.at("quad").handle, 
-		"opts.mirrorx");
-	glUniform1i(loc, renderopts.mirrorx);
-	loc = glGetUniformLocation(
-		m_shaders.at("quad").handle, 
-		"opts.mirrory");
-	glUniform1i(loc, renderopts.mirrory);
-	loc = glGetUniformLocation(
-		m_shaders.at("quad").handle, 
-		"opts.gaussblur");
-	glUniform1i(loc, renderopts.gaussblur);
+	glActiveTexture(GL_TEXTURE25);
+	glUniform1i(m_shaders.at("quad").u_locs.at("Texture"), 25);
+	glUniform1iv(
+		m_shaders.at("quad").u_locs.at("fxControl"),
+		1, &fxControl);
+	// draw
 	glDrawArrays(
 		quad_object.draw_mode, NULL, 
 		quad_object.num_elements);
@@ -300,6 +287,15 @@ void ApplicationSolar::keyCallback(int key, int scancode, int action, int mods) 
 	}
 	// Phong vs Cell Shading
 	shading = key == 49? 0: key == 50? 1: shading;
+	// fxControl |= 1 << 2; // set
+	// fxControl &= ~(1 << 2); // remove
+	// GLint bit = (fxControl >> 2) & 1; // check
+	if (action == GLFW_RELEASE) fxControl ^= 1 << (
+		key == 55? 0: // b/w
+		key == 56? 1: // h flip
+		key == 57? 2: // v flip
+		key == 48? 3: // blur
+		4);
 }
 
 // handle delta mouse movement input
@@ -342,7 +338,7 @@ void ApplicationSolar::initializeShaderPrograms() {
 		m_resource_path + "shaders/quad.vert",
 		m_resource_path + "shaders/quad.frag"});
 	m_shaders.at("quad").u_locs["Texture"] 			= -1;
-	// m_shaders.at("quad").u_locs["Parameters"]		= -1;
+	m_shaders.at("quad").u_locs["fxControl"]		= -1;
 }
 
 // load models

@@ -70,8 +70,8 @@ class ApplicationSolar : public Application {
 		
 		model_object planet_object, star_object, quad_object;
 		GLuint tex_handle, rbo_handle, fbo_handle;
-		// texture_object quad_texture;
-		GLint shading = 0;
+		GLint shading   = 0;
+		GLint fxControl = 0;
 };
 
 #endif
