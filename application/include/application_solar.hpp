@@ -36,7 +36,7 @@ class ApplicationSolar : public Application {
 				speed 	 = _speed;
 				orbit 	 = _orbit;
 				color 	 = _color;
-				id = _id;
+				id       = _id;
 			};
 		};
 		
@@ -62,19 +62,15 @@ class ApplicationSolar : public Application {
 		void initializeGeometry();
 		void updateView();
 		
-		// a cpu representation of model
-		model_object planet_object, star_object;
-	
-	private:
-		
-		// some mouse controls
 		bool mouseActive = true;
 		float mouseX = 0;
 		float mouseY = 0;
 		float zoom   = 4;
 		float slide  = 0;
 		
-		// shading control
+		model_object planet_object, star_object, quad_object;
+		GLuint tex_handle, rbo_handle, fbo_handle;
+		// texture_object quad_texture;
 		GLint shading = 0;
 };
 

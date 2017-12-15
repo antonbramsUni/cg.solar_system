@@ -27,12 +27,11 @@ void main () {
 	vec3 textureColor = texture(TextureColor,  textCoord).rgb;
 	vec3 norm = normal;
 	if (id == 3) {
-		vec3 tn   = texture(TextureNormal, textCoord).rgb;
-		vec3 bi   = normalize(cross(normal, tangent));
-		mat3 tbn  = mat3(tangent, bi, normal);
+		vec3 tn  = texture(TextureNormal, textCoord).rgb;
+		vec3 bi  = normalize(cross(normal, tangent));
+		mat3 tbn = mat3(tangent, bi, normal);
 		norm = normalize(tbn * tn);
 	}
-	// vec3 norm = normal;
 	// ambient
 	float ambientStrength  = .15;
 	vec3 ambient = ambientStrength * lightColor;
