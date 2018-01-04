@@ -1,8 +1,9 @@
 
-#version 150
+#version 430
 
 in vec3 normal;
-in vec3 light;
+//in vec3 light;
+in vec3 vertex;
 in vec3 view;
 in vec2 textCoord;
 in vec3 tangent;
@@ -12,12 +13,12 @@ uniform sampler2D TextureColor;
 uniform sampler2D TextureNormal;
 out vec4 out_Color;
 
-uniform BlobSettings {
-vec4 InnerColor;
-vec4 OuterColor;
-float RadiusInner;
-float RadiusOuter;
+layout (std430, binding=2) buffer LightSource
+{ 
+  vec4 light_position[10];
+  vec4 light_color[10];
 };
+
 
 vec3 breakColor (vec3 c, float factor) {
 	// color broken in RGB
@@ -27,9 +28,11 @@ vec3 breakColor (vec3 c, float factor) {
 	return c;
 }
 
-void main () {
+vec4 blinn_phong (vec3 light, vec3 lightColor){
+
+	light     = normalize(light - vertex);
 	// color settings
-	vec3 lightColor = vec3(1, 1, 1);
+	//vec3 lightColor = vec3(1, 1, 1);
 	// texture
 	vec3 textureColor = texture(TextureColor,  textCoord).rgb;
 	vec3 norm = normal;
@@ -70,5 +73,17 @@ void main () {
 		// contour with the same color as ambient
 		if (dot(view, norm) < .3f) result = ambient;
 	}
-	out_Color = vec4(result, 1.0);
+
+	return vec4(result, 1.0);
+
+};
+
+void main () {
+	vec4 color = vec4(0,0,0,0);
+	int length = 10;
+
+	for (uint i = 0; i < length; ++i) {	
+		color = color + blinn_phong(LightSource.light_position[i], LightSource.light_color[i])/length;
+	}
+	out_Color = color;
 }

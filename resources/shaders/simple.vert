@@ -1,5 +1,5 @@
 
-#version 150
+#version 430
 #extension GL_ARB_explicit_attrib_location : require
 
 // vertex attributes of VAO
@@ -10,19 +10,19 @@ layout(location = 3) in vec3 in_Tangent;
 
 uniform mat4 ModelMatrix;
 uniform mat4 NormalMatrix;
-//uniform mat4 ViewMatrix;
-//uniform mat4 ProjectionMatrix;
-uniform vec3 LightOrigin;
+//uniform vec3 LightOrigin;
 uniform int  Shading;
 uniform int  ID;
 
-layout (std140) uniform CameraBlock {
+layout (std140, binding = 1) uniform CameraBlock {
   mat4 ViewMatrix;
   mat4 ProjectionMatrix;
 } blockCam;
 
+
 out vec3 normal;
-out vec3 light;
+//out vec3 light;
+out vec3 vertex;
 out vec3 view;
 out vec2 textCoord;
 out vec3 tangent;
@@ -30,14 +30,14 @@ flat out int shading;
 flat out int id;
 
 void main (void) {
-	vec3 vertex = (ModelMatrix * vec4(in_Position, 1)).xyz;
+	vertex = (ModelMatrix * vec4(in_Position, 1)).xyz;
 	vec3 camera = (inverse(blockCam.ViewMatrix) * vec4(0,0,0, 1)).xyz;
 	// outs
 	gl_Position = 
 		blockCam.ProjectionMatrix * blockCam.ViewMatrix * 
 		ModelMatrix * vec4(in_Position, 1);
 	view      = normalize(camera - vertex);
-	light     = normalize(LightOrigin - vertex);
+	
 	normal    = normalize((ModelMatrix * vec4(in_Normal, 0)).xyz);
 	shading   = Shading;
 	textCoord = in_TexCoord;
