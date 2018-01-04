@@ -39,7 +39,11 @@ class ApplicationSolar : public Application {
 				id       = _id;
 			};
 		};
-		
+		struct CameraBlock {
+			glm::fmat4 viewMatrix;
+			glm::fmat4 projectionMatrix;
+
+		};
 		// allocate and initialize objects
 		ApplicationSolar(std::string const& resource_path);
 		// free allocated objects
@@ -69,9 +73,11 @@ class ApplicationSolar : public Application {
 		float slide  = 0;
 		
 		model_object planet_object, star_object, quad_object;
+		CameraBlock camera_object;
 		GLuint tex_handle, rbo_handle, fbo_handle;
 		GLint shading   = 0;
 		GLint fxControl = 0;
+		GLuint cameraUBO = 0;
 };
 
 #endif

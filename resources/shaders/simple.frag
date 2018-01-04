@@ -12,6 +12,13 @@ uniform sampler2D TextureColor;
 uniform sampler2D TextureNormal;
 out vec4 out_Color;
 
+uniform BlobSettings {
+vec4 InnerColor;
+vec4 OuterColor;
+float RadiusInner;
+float RadiusOuter;
+};
+
 vec3 breakColor (vec3 c, float factor) {
 	// color broken in RGB
 	c.r = round(c.r * factor) / factor;

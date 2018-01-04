@@ -10,11 +10,16 @@ layout(location = 3) in vec3 in_Tangent;
 
 uniform mat4 ModelMatrix;
 uniform mat4 NormalMatrix;
-uniform mat4 ViewMatrix;
-uniform mat4 ProjectionMatrix;
+//uniform mat4 ViewMatrix;
+//uniform mat4 ProjectionMatrix;
 uniform vec3 LightOrigin;
 uniform int  Shading;
 uniform int  ID;
+
+layout (std140) uniform CameraBlock {
+  mat4 ViewMatrix;
+  mat4 ProjectionMatrix;
+} blockCam;
 
 out vec3 normal;
 out vec3 light;
@@ -26,10 +31,10 @@ flat out int id;
 
 void main (void) {
 	vec3 vertex = (ModelMatrix * vec4(in_Position, 1)).xyz;
-	vec3 camera = (inverse(ViewMatrix) * vec4(0,0,0, 1)).xyz;
+	vec3 camera = (inverse(blockCam.ViewMatrix) * vec4(0,0,0, 1)).xyz;
 	// outs
 	gl_Position = 
-		ProjectionMatrix * ViewMatrix * 
+		blockCam.ProjectionMatrix * blockCam.ViewMatrix * 
 		ModelMatrix * vec4(in_Position, 1);
 	view      = normalize(camera - vertex);
 	light     = normalize(LightOrigin - vertex);
