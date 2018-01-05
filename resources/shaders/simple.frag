@@ -1,8 +1,6 @@
-
 #version 430
 
 in vec3 normal;
-//in vec3 light;
 in vec3 vertex;
 in vec3 view;
 in vec2 textCoord;
@@ -13,10 +11,14 @@ uniform sampler2D TextureColor;
 uniform sampler2D TextureNormal;
 out vec4 out_Color;
 
-layout (std430, binding=2) buffer LightSource
-{ 
-  vec4 light_position[10];
-  vec4 light_color[10];
+struct LightSource {
+	vec4 light_position;
+    vec4 light_color;
+};
+
+layout (std430, binding=1) buffer LightSources
+{
+    LightSource light_sources[];
 };
 
 
@@ -28,11 +30,9 @@ vec3 breakColor (vec3 c, float factor) {
 	return c;
 }
 
-vec4 blinn_phong (vec3 light, vec3 lightColor){
-
-	light     = normalize(light - vertex);
+vec4 blinnPhong (vec3 lightPosition, vec3 lightColor) {
 	// color settings
-	//vec3 lightColor = vec3(1, 1, 1);
+	lightPosition  = normalize(lightPosition - vertex);
 	// texture
 	vec3 textureColor = texture(TextureColor,  textCoord).rgb;
 	vec3 norm = normal;
@@ -46,18 +46,18 @@ vec4 blinn_phong (vec3 light, vec3 lightColor){
 	float ambientStrength  = .15;
 	vec3 ambient = ambientStrength * lightColor;
 	// diffuse
-	vec3 diffuse = max(dot(norm, light), .0) * lightColor;
+	vec3 diffuse = max(dot(norm, lightPosition), .0) * lightColor;
 	// Blinn Phong specular
 	vec3 specular = vec3(0,0,0);
 	if (true) {
 		// code was done following https://learnopengl.com/#!Advanced-Lighting/Advanced-Lighting
-		vec3 halfWay  = normalize(light + view);
+		vec3 halfWay  = normalize(lightPosition + view);
 		specular = pow(max(dot(norm, halfWay), .0), 16.0) * lightColor;
 	// Phong specular
 	} else {
 		// code was done following https://learnopengl.com/#!Lighting/Basic-Lighting
 		float specularStrength = .5;
-		vec3  refl = reflect(-light, norm);
+		vec3  refl = reflect(-lightPosition, norm);
 		float spec = pow(max(dot(view, refl), .0), 32);
 		specular = specularStrength * spec * lightColor;
 	}
@@ -75,15 +75,15 @@ vec4 blinn_phong (vec3 light, vec3 lightColor){
 	}
 
 	return vec4(result, 1.0);
-
-};
+}
 
 void main () {
 	vec4 color = vec4(0,0,0,0);
-	int length = 10;
+	int length = 5;//light_sources.length();
 
 	for (uint i = 0; i < length; ++i) {	
-		color = color + blinn_phong(LightSource.light_position[i], LightSource.light_color[i])/length;
+		color = color + blinnPhong(light_sources[i].light_position.xyz, light_sources[i].light_color.rgb) / length;
 	}
+
 	out_Color = color;
 }

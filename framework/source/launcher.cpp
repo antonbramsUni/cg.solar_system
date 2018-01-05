@@ -73,7 +73,7 @@ void Launcher::initialize() {
   #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   #else
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   #endif
   // create m_window, if unsuccessfull, quit
   m_window = glfwCreateWindow(m_window_width, m_window_height, "OpenGL Framework", NULL, NULL);
@@ -84,8 +84,8 @@ void Launcher::initialize() {
 
   // use the windows context
   glfwMakeContextCurrent(m_window);
-  // disable vsync
-  glfwSwapInterval(0);
+  // enable vsync
+  glfwSwapInterval(1);
   // set user pointer to access this instance statically
   glfwSetWindowUserPointer(m_window, this);
   // register key input function
@@ -111,6 +111,8 @@ void Launcher::initialize() {
 
   // activate error checking after each gl function call
   watch_gl_errors();
+
+  glEnable(GL_MULTISAMPLE);
 }
  
 void Launcher::mainLoop() {

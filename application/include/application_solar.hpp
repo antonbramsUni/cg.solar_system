@@ -7,9 +7,9 @@
 
 // gpu representation of model
 class ApplicationSolar : public Application {
-	
+
 	public:
-		
+
 		struct Planet {
 			std::string name;
 			int parent;
@@ -44,9 +44,17 @@ class ApplicationSolar : public Application {
 			glm::fmat4 projectionMatrix;
 
 		};
-		struct LightSources{
-			glm::fvec4 *lightPosition;
-			glm::fvec4 *lightColor;
+		struct LightSource {
+			glm::fvec4 lightPosition;
+			glm::fvec4 lightColor;
+
+			LightSource(
+				glm::fvec4 _lightPosition,
+				glm::fvec4 _lightColor
+			){
+				lightPosition = _lightPosition;
+				lightColor = _lightColor;
+            };
 		};
 		// allocate and initialize objects
 		ApplicationSolar(std::string const& resource_path);
@@ -63,22 +71,22 @@ class ApplicationSolar : public Application {
 		// draw all objects
 		void render() const;
 		void upload_planet_transforms(Planet &p) const;
-		
+
 	protected:
-		
+
 		void initializeShaderPrograms();
 		void initializeGeometry();
 		void updateView();
-		
+
 		bool mouseActive = true;
 		float mouseX = 0;
 		float mouseY = 0;
 		float zoom   = 4;
 		float slide  = 0;
-		
+
 		model_object planet_object, star_object, quad_object;
 		CameraBlock camera_object;
-		LightSources light_object; 
+		std::vector<LightSource> lightSources;
 		GLuint tex_handle, rbo_handle, fbo_handle;
 		GLint shading   = 0;
 		GLint fxControl = 0;
