@@ -82,8 +82,8 @@ ApplicationSolar::ApplicationSolar (std::string const &resource_path) :
   initializeGeometry ();
   initializeShaderPrograms ();
   // create texture
-  int width = 640 * 2;
-  int height = 480 * 2;
+  int width = 640 ;// * 2;
+  int height = 480 ;//* 2;
   glActiveTexture (GL_TEXTURE25);
   glGenTextures (1, &tex_handle);
   glBindTexture (GL_TEXTURE_2D, tex_handle);
