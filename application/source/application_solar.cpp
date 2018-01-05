@@ -71,12 +71,12 @@ ApplicationSolar::ApplicationSolar (std::string const &resource_path) :
     }
 
   for (int i = 0; i < round (random (5, 10)); i++)
-    {
-      glm::fvec4 lightPosition = glm::fvec4 (random (-15, 15), random (-15, 15), random (-15, 15), 1);
-      glm::fvec4 lightColor = glm::fvec4 (random (0.5, 1), random (0.5, 0.75), random (0.5, 1), 1.0);
-      lightSources.emplace_back (LightSource (lightPosition, lightColor));
+  {
+    glm::fvec4 lightPosition = glm::fvec4 (random (-15, 15), random (-15, 15), random (-15, 15), 1);
+    glm::fvec4 lightColor = glm::fvec4 (random (0.5, 1), random (0.5, 0.75), random (0.5, 1), 1.0);
+    lightSources.emplace_back (LightSource (lightPosition, lightColor));
       // lightSources.emplace_back (LightSource (lightPosition, glm::fvec4 (1.0, 0.0, 0.0, 1.0)));
-    }
+  }
 
   // initialize other stuff
   initializeGeometry ();
